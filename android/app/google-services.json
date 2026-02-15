@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "566178918427",
+    "project_id": "travel-planner-tfg",
+    "storage_bucket": "travel-planner-tfg.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:566178918427:android:f1a29ff8578b6a86d788be",
+        "android_client_info": {
+          "package_name": "com.fravilarc.travel_planner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmQJRUKComWcCx9ShZrJE05dDhN43cVr8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
