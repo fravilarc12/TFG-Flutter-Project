@@ -26,12 +26,23 @@ class Trip {
   // 2. EL TRADUCTOR: De documento de Firebase a objeto Dart
   factory Trip.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final dateValue = data['date'];
+
+    // Lógica inteligente para la fecha
+    DateTime parsedDate;
+    if (dateValue is Timestamp) {
+      parsedDate = dateValue.toDate();
+    } else if (dateValue is String) {
+      parsedDate = DateTime.tryParse(dateValue) ?? DateTime.now();
+    } else {
+      parsedDate = DateTime.now();
+    }
+
     return Trip(
       id: doc.id,
       title: data['title'] ?? '',
       destination: data['destination'] ?? '',
-      // Convertimos el Timestamp de Firebase de vuelta a DateTime de Dart
-      date: (data['date'] as Timestamp).toDate(),
+      date: parsedDate,
     );
   }
 }

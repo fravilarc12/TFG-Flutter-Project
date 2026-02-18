@@ -134,14 +134,11 @@ class _RouteTabState extends State<_RouteTab> {
       return const Center(child: Text("Ubicación no encontrada"));
 
     return GoogleMap(
-      initialCameraPosition: CameraPosition(target: _location!, zoom: 12),
-      markers: {
-        Marker(
-          markerId: const MarkerId('dest'),
-          position: _location!,
-          infoWindow: InfoWindow(title: widget.destination),
-        ),
-      },
+      initialCameraPosition: CameraPosition(target: _location!, zoom: 16),
+      // 🛑 IMPORTANTE: Dejamos esto vacío. Ni un solo Marker() dentro.
+      markers: const {},
+      myLocationEnabled: false,
+      myLocationButtonEnabled: false,
     );
   }
 }
