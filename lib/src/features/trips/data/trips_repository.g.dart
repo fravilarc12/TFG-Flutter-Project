@@ -194,5 +194,140 @@ class _ChecklistStreamProviderElement
   @override
   String get tripId => (origin as ChecklistStreamProvider).tripId;
 }
+
+String _$expensesStreamHash() => r'25315419999ebcabd061daf90a3974936a74d37a';
+
+/// See also [expensesStream].
+@ProviderFor(expensesStream)
+const expensesStreamProvider = ExpensesStreamFamily();
+
+/// See also [expensesStream].
+class ExpensesStreamFamily
+    extends Family<AsyncValue<List<Map<String, dynamic>>>> {
+  /// See also [expensesStream].
+  const ExpensesStreamFamily();
+
+  /// See also [expensesStream].
+  ExpensesStreamProvider call(
+    String tripId,
+  ) {
+    return ExpensesStreamProvider(
+      tripId,
+    );
+  }
+
+  @override
+  ExpensesStreamProvider getProviderOverride(
+    covariant ExpensesStreamProvider provider,
+  ) {
+    return call(
+      provider.tripId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'expensesStreamProvider';
+}
+
+/// See also [expensesStream].
+class ExpensesStreamProvider
+    extends AutoDisposeStreamProvider<List<Map<String, dynamic>>> {
+  /// See also [expensesStream].
+  ExpensesStreamProvider(
+    String tripId,
+  ) : this._internal(
+          (ref) => expensesStream(
+            ref as ExpensesStreamRef,
+            tripId,
+          ),
+          from: expensesStreamProvider,
+          name: r'expensesStreamProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$expensesStreamHash,
+          dependencies: ExpensesStreamFamily._dependencies,
+          allTransitiveDependencies:
+              ExpensesStreamFamily._allTransitiveDependencies,
+          tripId: tripId,
+        );
+
+  ExpensesStreamProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.tripId,
+  }) : super.internal();
+
+  final String tripId;
+
+  @override
+  Override overrideWith(
+    Stream<List<Map<String, dynamic>>> Function(ExpensesStreamRef provider)
+        create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ExpensesStreamProvider._internal(
+        (ref) => create(ref as ExpensesStreamRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        tripId: tripId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeStreamProviderElement<List<Map<String, dynamic>>> createElement() {
+    return _ExpensesStreamProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ExpensesStreamProvider && other.tripId == tripId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, tripId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ExpensesStreamRef
+    on AutoDisposeStreamProviderRef<List<Map<String, dynamic>>> {
+  /// The parameter `tripId` of this provider.
+  String get tripId;
+}
+
+class _ExpensesStreamProviderElement
+    extends AutoDisposeStreamProviderElement<List<Map<String, dynamic>>>
+    with ExpensesStreamRef {
+  _ExpensesStreamProviderElement(super.provider);
+
+  @override
+  String get tripId => (origin as ExpensesStreamProvider).tripId;
+}
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -9,6 +9,8 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
+  google_maps_flutter: ^2.5.3
+  geocoding: ^2.1.1 # Para convertir nombres como "Malta" en coordenadas
   
   # Gestión de Estado y DI
   flutter_riverpod: ^2.5.1

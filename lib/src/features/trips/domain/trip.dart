@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Trip {
   final String? id;
   final String title;
@@ -11,22 +13,25 @@ class Trip {
     required this.date,
   });
 
-  // Convierte el objeto a un Mapa para enviar a Firebase
-  Map<String, dynamic> toMap() {
+  // 1. EL TRADUCTOR: De objeto Dart a Mapa de Firebase
+  Map<String, dynamic> toFirestore() {
     return {
       'title': title,
       'destination': destination,
-      'date': date.toIso8601String(),
+      'date':
+          Timestamp.fromDate(date), // Firebase usa Timestamps para las fechas
     };
   }
 
-  // Crea un objeto Trip a partir de los datos de Firebase
-  factory Trip.fromMap(String id, Map<String, dynamic> map) {
+  // 2. EL TRADUCTOR: De documento de Firebase a objeto Dart
+  factory Trip.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
     return Trip(
-      id: id,
-      title: map['title'] ?? '',
-      destination: map['destination'] ?? '',
-      date: DateTime.parse(map['date'] ?? DateTime.now().toIso8601String()),
+      id: doc.id,
+      title: data['title'] ?? '',
+      destination: data['destination'] ?? '',
+      // Convertimos el Timestamp de Firebase de vuelta a DateTime de Dart
+      date: (data['date'] as Timestamp).toDate(),
     );
   }
 }
