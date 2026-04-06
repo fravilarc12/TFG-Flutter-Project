@@ -27,6 +27,20 @@ class AuthController extends _$AuthController {
     );
   }
 
+  Future<void> signInWithGoogle() async {
+    final repository = ref.read(authRepositoryProvider);
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => repository.signInWithGoogle(),
+    );
+  }
+
+  Future<void> recoverPassword(String email) async {
+    final repository = ref.read(authRepositoryProvider);
+    // No cambiamos "state" aquí porque si pasa a AsyncData, la UI navega al Home.
+    await repository.sendPasswordResetEmail(email);
+  }
+
   Future<void> signOut() async {
     final repository = ref.read(authRepositoryProvider);
     await repository.signOut();

@@ -4,45 +4,48 @@ class Trip {
   final String? id;
   final String title;
   final String destination;
-  final DateTime date;
+  final DateTime startDate;
+  final DateTime endDate;
 
   Trip({
     this.id,
     required this.title,
     required this.destination,
-    required this.date,
+    required this.startDate,
+    required this.endDate,
   });
 
-  // 1. EL TRADUCTOR: De objeto Dart a Mapa de Firebase
   Map<String, dynamic> toFirestore() {
     return {
       'title': title,
       'destination': destination,
-      'date':
-          Timestamp.fromDate(date), // Firebase usa Timestamps para las fechas
+      'startDate': Timestamp.fromDate(startDate),
+      'endDate': Timestamp.fromDate(endDate),
     };
   }
 
-  // 2. EL TRADUCTOR: De documento de Firebase a objeto Dart
   factory Trip.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    final dateValue = data['date'];
 
-    // Lógica inteligente para la fecha
-    DateTime parsedDate;
-    if (dateValue is Timestamp) {
-      parsedDate = dateValue.toDate();
-    } else if (dateValue is String) {
-      parsedDate = DateTime.tryParse(dateValue) ?? DateTime.now();
-    } else {
-      parsedDate = DateTime.now();
+    // Compatibilidad hacia atrás: Si no exis ten las nuevas variables, intenta usar 'date' antigua
+    final startDateValue = data['startDate'] ?? data['date'];
+    final endDateValue = data['endDate'] ?? data['date'];
+
+    DateTime parseDate(dynamic dateValue) {
+      if (dateValue is Timestamp) {
+        return dateValue.toDate();
+      } else if (dateValue is String) {
+        return DateTime.tryParse(dateValue) ?? DateTime.now();
+      }
+      return DateTime.now();
     }
 
     return Trip(
       id: doc.id,
       title: data['title'] ?? '',
       destination: data['destination'] ?? '',
-      date: parsedDate,
+      startDate: parseDate(startDateValue),
+      endDate: parseDate(endDateValue),
     );
   }
 }

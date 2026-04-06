@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../data/trips_repository.dart';
 import '../../domain/trip.dart';
@@ -14,12 +15,14 @@ class HomeScreen extends ConsumerWidget {
     final tripsAsync = ref.watch(tripsStreamProvider);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
           'Mis Viajes',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        backgroundColor: const Color(0xFF0066CC),
+        backgroundColor: const Color(0xFF005D90),
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -81,25 +84,96 @@ class HomeScreen extends ConsumerWidget {
                 },
 
                 // 5. Tu tarjeta de viaje actual
-                child: Card(
+                child: Container(
                   margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  elevation: 2,
-                  child: ListTile(
-                    onTap: () =>
-                        context.push('/trip/${trip.id}'), // <--- NAVEGACIÓN
-                    leading: const Icon(
-                      Icons.flight_takeoff,
-                      color: Color(0xFF0066CC),
-                    ), // Solo un leading al principio
-                    title: Text(
-                      trip.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x14005D90),
+                        offset: Offset(0, 12),
+                        blurRadius: 32,
+                      ),
+                    ],
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(24),
+                    onTap: () => context.push('/trip/${trip.id}'),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                trip.title,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF191C1D),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  const Icon(Icons.calendar_today,
+                                      size: 16, color: Color(0xFF707881)),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    "${trip.startDate.day}/${trip.startDate.month}/${trip.startDate.year} - ${trip.endDate.day}/${trip.endDate.month}/${trip.endDate.year}",
+                                    style: const TextStyle(
+                                      color: Color(0xFF707881),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  const Icon(Icons.location_on,
+                                      size: 16, color: Color(0xFF005D90)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    trip.destination,
+                                    style: const TextStyle(
+                                      color: Color(0xFF005D90),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(24),
+                            bottomRight: Radius.circular(24),
+                          ),
+                          child: CachedNetworkImage(
+                            imageUrl: "https://maps.googleapis.com/maps/api/staticmap?center=${Uri.encodeComponent(trip.destination)}&zoom=6&size=800x400&maptype=terrain&style=feature:all|element:labels|visibility:off&key=AIzaSyBMTvXaq-cb3w4qLCRe_BkmVwA5B4ah4Qc",
+                            height: 160,
+                            fit: BoxFit.cover,
+                            memCacheWidth: 600, // Limitamos el tamaño en memoria
+                            memCacheHeight: 300,
+                            placeholder: (context, url) => Container(
+                              height: 160,
+                              color: Colors.grey.shade100,
+                              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            ),
+                            errorWidget: (context, url, error) =>
+                                Container(
+                              height: 160,
+                              color: Colors.grey.shade200,
+                              child: const Center(
+                                  child: Icon(Icons.map,
+                                      color: Colors.grey, size: 40)),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    subtitle: Text(
-                      "${trip.destination} • ${trip.date.day}/${trip.date.month}/${trip.date.year}",
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
                   ),
                 ),
               );
@@ -109,11 +183,28 @@ class HomeScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddTripDialog(context, ref),
-        backgroundColor: const Color(0xFF0066CC),
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Nuevo Viaje', style: TextStyle(color: Colors.white)),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0x33005D90),
+              offset: const Offset(0, 8),
+              blurRadius: 24,
+            ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: () => _showAddTripDialog(context, ref),
+          backgroundColor: const Color(0xFF005D90),
+          elevation: 0,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          icon: const Icon(Icons.add, color: Colors.white),
+          label: const Text('Nuevo Viaje',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        ),
       ),
     );
   }
@@ -122,7 +213,10 @@ class HomeScreen extends ConsumerWidget {
   void _showAddTripDialog(BuildContext context, WidgetRef ref) {
     final titleController = TextEditingController();
     final destinationController = TextEditingController();
-    DateTime selectedDate = DateTime.now(); // Fecha por defecto
+    DateTimeRange selectedDateRange = DateTimeRange(
+      start: DateTime.now(),
+      end: DateTime.now().add(const Duration(days: 7)),
+    );
 
     showDialog(
       context: context,
@@ -131,45 +225,71 @@ class HomeScreen extends ConsumerWidget {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('Planear Nuevo Viaje'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleController,
-                    decoration:
-                        const InputDecoration(labelText: 'Nombre del viaje'),
-                  ),
-                  TextField(
-                    controller: destinationController,
-                    decoration: const InputDecoration(labelText: 'Destino'),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // BOTÓN PARA ELEGIR FECHA
-                  ListTile(
-                    title: const Text("Fecha del viaje:"),
-                    subtitle: Text(
-                      "Seleccionado: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                      style: TextStyle(color: Colors.grey.shade600),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24)),
+              title: const Text('Planear Nuevo Viaje',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: Color(0xFF005D90))),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      style: const TextStyle(color: Color(0xFF191C1D)),
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre del viaje',
+                        labelStyle: TextStyle(color: Color(0xFF707881)),
+                      ),
                     ),
-                    leading: const Icon(Icons.calendar_today,
-                        color: Color(0xFF0066CC)),
-                    onTap: () async {
-                      // Abre el calendario oficial de Android/iOS
-                      final DateTime? picked = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDate,
-                        firstDate:
-                            DateTime.now(), // No dejar elegir fechas pasadas
-                        lastDate: DateTime(2030),
-                      );
-                      if (picked != null && picked != selectedDate) {
-                        setState(() => selectedDate = picked);
-                      }
-                    },
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: destinationController,
+                      style: const TextStyle(color: Color(0xFF191C1D)),
+                      decoration: const InputDecoration(
+                        labelText: 'Destino',
+                        labelStyle: TextStyle(color: Color(0xFF707881)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // BOTÓN PARA ELEGIR RANGO DE FECHAS
+                    ListTile(
+                      title: const Text("Fechas del viaje:"),
+                      subtitle: Text(
+                        "Del ${selectedDateRange.start.day}/${selectedDateRange.start.month}/${selectedDateRange.start.year} al ${selectedDateRange.end.day}/${selectedDateRange.end.month}/${selectedDateRange.end.year}",
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
+                      leading: const Icon(Icons.date_range,
+                          color: Color(0xFF005D90)),
+                      onTap: () async {
+                        // Abre el calendario de rangos oficial de Android/iOS
+                        final DateTimeRange? picked = await showDateRangePicker(
+                          context: context,
+                          initialDateRange: selectedDateRange,
+                          firstDate: DateTime.now(), // No dejar elegir pasadas
+                          lastDate: DateTime(2030),
+                          builder: (context, child) {
+                            return Theme(
+                              data: Theme.of(context).copyWith(
+                                colorScheme: const ColorScheme.light(
+                                  primary: Color(0xFF005D90),
+                                  onPrimary: Colors.white,
+                                  onSurface: Color(0xFF191C1D),
+                                ),
+                              ),
+                              child: child!,
+                            );
+                          },
+                        );
+                        if (picked != null) {
+                          setState(() => selectedDateRange = picked);
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -183,7 +303,8 @@ class HomeScreen extends ConsumerWidget {
                       final nuevoViaje = Trip(
                         title: titleController.text,
                         destination: destinationController.text,
-                        date: selectedDate, // Guardamos la fecha elegida
+                        startDate: selectedDateRange.start,
+                        endDate: selectedDateRange.end,
                       );
 
                       await ref

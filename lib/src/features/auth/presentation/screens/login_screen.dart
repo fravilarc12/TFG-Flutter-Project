@@ -16,6 +16,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // Así sobreviven cuando sale el teclado
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -37,11 +38,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // 4. Escuchamos los cambios de estado (Login éxito o error)
     ref.listen(authControllerProvider, (previous, next) {
       if (next is AsyncError) {
+        final errorString = next.error.toString().toLowerCase();
+        String translatedMessage = 'Error de autenticación. Inténtalo de nuevo.';
+        
+        if (errorString.contains('invalid-credential') || errorString.contains('user-not-found') || errorString.contains('wrong-password')) {
+          translatedMessage = 'El correo o la contraseña son incorrectos.';
+        } else if (errorString.contains('invalid-email')) {
+          translatedMessage = 'El formato del correo no es válido.';
+        } else if (errorString.contains('too-many-requests')) {
+          translatedMessage = 'Demasiados intentos fallidos. Inténtalo más tarde.';
+        } else if (errorString.contains('network-request-failed') || errorString.contains('network_error')) {
+          translatedMessage = 'Error de conexión. Comprueba tu internet.';
+        } else if (errorString.contains('sign_in_failed') || errorString.contains('sign_in_canceled')) {
+          translatedMessage = 'Error con Google: configura el SHA-1 en Firebase Console.';
+        } else if (errorString.contains('cancelado')) {
+          translatedMessage = 'Inicio de sesión con Google cancelado.';
+        } else if (errorString.contains('google')) {
+          // Muestra el error real de Google para facilitar el diagnóstico
+          translatedMessage = 'Error con Google: ${next.error.toString().replaceAll('Exception:', '').trim()}';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              next.error.toString().replaceAll('Exception:', '').trim(),
-            ),
+            content: Text(translatedMessage),
             backgroundColor: Colors.red,
           ),
         );
@@ -65,18 +84,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(
-                Icons.flight_takeoff_rounded,
-                size: 80,
-                color: Color(0xFF0066CC),
+              Center(
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    height: 120,
+                    width: 120,
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               Text(
-                'TravelPlanner',
+                'TravelHub',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1E293B),
+                      color: const Color(0xFF005D90),
                     ),
               ),
               const SizedBox(height: 8),
@@ -91,12 +115,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
               // CAMPO EMAIL
               TextField(
-                controller:
-                    emailController, // Usamos el controlador persistente
+                controller: emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
+                style: const TextStyle(color: Color(0xFF191C1D)),
+                decoration: InputDecoration(
                   labelText: 'Correo Electrónico',
-                  prefixIcon: Icon(Icons.email_outlined),
+                  labelStyle: const TextStyle(color: Color(0xFF707881)),
+                  prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF707881)),
+                  filled: true,
+                  fillColor: const Color(0xFFE7E8E9),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0x33005D90), width: 2)),
                 ),
                 enabled: !isLoading,
               ),
@@ -104,13 +133,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
               // CAMPO PASSWORD
               TextField(
-                controller:
-                    passwordController, // Usamos el controlador persistente
-                obscureText: true,
-                decoration: const InputDecoration(
+                controller: passwordController,
+                obscureText: _obscurePassword,
+                style: const TextStyle(color: Color(0xFF191C1D)),
+                decoration: InputDecoration(
                   labelText: 'Contraseña',
-                  prefixIcon: Icon(Icons.lock_outlined),
-                  suffixIcon: Icon(Icons.visibility_off_outlined),
+                  labelStyle: const TextStyle(color: Color(0xFF707881)),
+                  prefixIcon: const Icon(Icons.lock_outlined, color: Color(0xFF707881)),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: const Color(0xFF707881),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFE7E8E9),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0x33005D90), width: 2)),
                 ),
                 enabled: !isLoading,
               ),
@@ -118,39 +162,102 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: isLoading ? null : () {},
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          final email = emailController.text.trim();
+                          if (email.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Introduce tu correo en el campo de arriba para enviarte el enlace de recuperación.'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return;
+                          }
+                          
+                          try {
+                            await ref
+                                .read(authControllerProvider.notifier)
+                                .recoverPassword(email);
+                            
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Se ha enviado un correo a $email con las instrucciones. Revisa tu carpeta de Spam.'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Error al enviar: ${e.toString().replaceAll('Exception:', '').trim()}'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
                   child: const Text('¿Olvidaste tu contraseña?'),
                 ),
               ),
               const SizedBox(height: 24),
 
               // BOTÓN LOGIN
-              ElevatedButton(
-                onPressed: isLoading
-                    ? null
-                    : () {
-                        // Ocultar teclado al pulsar
-                        FocusScope.of(context).unfocus();
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF005D90), Color(0xFF0077B6)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0x14005D90),
+                      offset: const Offset(0, 12),
+                      blurRadius: 32,
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          // Ocultar teclado al pulsar
+                          FocusScope.of(context).unfocus();
 
-                        ref.read(authControllerProvider.notifier).login(
-                              emailController.text.trim(),
-                              passwordController.text.trim(),
-                            );
-                      },
-                child: isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+                          ref.read(authControllerProvider.notifier).login(
+                                emailController.text.trim(),
+                                passwordController.text.trim(),
+                              );
+                        },
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Iniciar Sesión',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
-                      )
-                    : const Text(
-                        'Iniciar Sesión',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -168,6 +275,61 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ],
               ),
+
+              // SEPARADOR
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'o continúa con',
+                        style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // BOTÓN GOOGLE
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(color: Colors.grey.shade300),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  backgroundColor: Colors.white,
+                ),
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        FocusScope.of(context).unfocus();
+                        ref
+                            .read(authControllerProvider.notifier)
+                            .signInWithGoogle();
+                      },
+                icon: Image.network(
+                  'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                  height: 22,
+                  width: 22,
+                  errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.g_mobiledata, size: 22, color: Color(0xFF4285F4)),
+                ),
+                label: const Text(
+                  'Continuar con Google',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),

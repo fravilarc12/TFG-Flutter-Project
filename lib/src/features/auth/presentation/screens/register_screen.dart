@@ -15,6 +15,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
   late final TextEditingController confirmPasswordController; // Nuevo campo
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void initState() {
@@ -37,10 +39,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     // Escuchamos el estado global
     ref.listen(authControllerProvider, (previous, next) {
       if (next is AsyncError) {
+        final errorString = next.error.toString().toLowerCase();
+        String translatedMessage = 'Ocurrió un error en el registro. Inténtalo de nuevo.';
+        
+        if (errorString.contains('weak-password')) {
+          translatedMessage = 'La contraseña es demasiado corta (mínimo 6 caracteres).';
+        } else if (errorString.contains('email-already-in-use')) {
+          translatedMessage = 'Ese correo electrónico ya está registrado.';
+        } else if (errorString.contains('invalid-email')) {
+          translatedMessage = 'El formato del correo no es válido.';
+        } else if (errorString.contains('network-request-failed')) {
+          translatedMessage = 'Error de conexión. Comprueba tu internet.';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(next.error.toString().replaceAll('Exception:', '').trim()),
+            content: Text(translatedMessage),
             backgroundColor: Colors.red,
           ),
         );
@@ -106,10 +120,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               // PASSWORD
               TextField(
                 controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
                   labelText: 'Contraseña',
-                  prefixIcon: Icon(Icons.lock_outlined),
+                  prefixIcon: const Icon(Icons.lock_outlined),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
                 ),
                 enabled: !isLoading,
               ),
@@ -118,10 +142,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               // CONFIRM PASSWORD
               TextField(
                 controller: confirmPasswordController,
-                obscureText: true,
-                decoration: const InputDecoration(
+                obscureText: _obscureConfirmPassword,
+                decoration: InputDecoration(
                   labelText: 'Confirmar Contraseña',
-                  prefixIcon: Icon(Icons.lock_outline),
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureConfirmPassword = !_obscureConfirmPassword;
+                      });
+                    },
+                  ),
                 ),
                 enabled: !isLoading,
               ),
@@ -162,6 +196,60 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold)),
               ),
+
+              // SEPARADOR
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'o regístrate con',
+                        style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
+              ),
+
+              // BOTÓN GOOGLE
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(color: Colors.grey.shade300),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  backgroundColor: Colors.white,
+                ),
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        FocusScope.of(context).unfocus();
+                        ref
+                            .read(authControllerProvider.notifier)
+                            .signInWithGoogle();
+                      },
+                icon: Image.network(
+                  'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                  height: 22,
+                  width: 22,
+                  errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.g_mobiledata, size: 22, color: Color(0xFF4285F4)),
+                ),
+                label: const Text(
+                  'Continuar con Google',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),

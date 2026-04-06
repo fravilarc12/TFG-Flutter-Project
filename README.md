@@ -169,7 +169,10 @@ flutter analyze
 - [x] Implementación de autenticación con Firebase
 - [x] CRUD completo de viajes con sincronización en tiempo real
 - [x] UI con Material Design 3 y modo oscuro
-- [ ] Implementación completa de gestión de gastos
+- [x] Implementación completa de gestión de gastos categorizados (FRQ-0004)
+- [x] Visores interactivos de Mapas (FRQ-0006) y Galería fotográfica (FRQ-0005)
+- [x] Integración de carga y visor de Docs nativos (Billetes/PDFs) (FRQ-0007)
+- [x] Implementación de agrupado/categorías en Equipaje (FRQ-0003)
 - [ ] Testing exhaustivo (Unit, Widget, Integration)
 - [ ] Benchmarks de rendimiento vs React Native
 - [ ] Documentación técnica final
