@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import '../../data/trips_repository.dart';
+import '../../domain/trip.dart';
 
 class TripDetailsScreen extends ConsumerWidget {
   final String tripId;
@@ -20,15 +21,17 @@ class TripDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tripsAsync = ref.watch(tripsStreamProvider);
+    // Optimizamos para observar solo el viaje actual, evitando rebuilds innecesarios
+    // si cambian otros viajes en la lista de Firebase.
+    final tripAsync = ref.watch(tripsStreamProvider.select((async) {
+      return async.whenData((trips) => trips.firstWhere(
+            (t) => t.id == tripId,
+            orElse: () => throw Exception('Viaje no encontrado'),
+          ));
+    }));
 
-    return tripsAsync.when(
-      data: (trips) {
-        final trip = trips.firstWhere(
-          (t) => t.id == tripId,
-          orElse: () => throw Exception('Viaje no encontrado'),
-        );
-
+    return tripAsync.when(
+      data: (trip) {
         return DefaultTabController(
           length: 5,
           child: Scaffold(
@@ -47,10 +50,11 @@ class TripDetailsScreen extends ConsumerWidget {
                       fit: StackFit.expand,
                       children: [
                         CachedNetworkImage(
-                          imageUrl: "https://maps.googleapis.com/maps/api/staticmap?center=${Uri.encodeComponent(trip.destination)}&zoom=11&size=800x400&maptype=terrain&key=AIzaSyBMTvXaq-cb3w4qLCRe_BkmVwA5B4ah4Qc",
+                          imageUrl:
+                              "https://maps.googleapis.com/maps/api/staticmap?center=${Uri.encodeComponent(trip.destination)}&zoom=11&size=500x250&maptype=terrain&key=AIzaSyBMTvXaq-cb3w4qLCRe_BkmVwA5B4ah4Qc",
                           fit: BoxFit.cover,
-                          memCacheWidth: 800,
-                          memCacheHeight: 400,
+                          memCacheWidth: 500,
+                          memCacheHeight: 250,
                         ),
                         const DecoratedBox(
                           decoration: BoxDecoration(
@@ -89,7 +93,7 @@ class TripDetailsScreen extends ConsumerWidget {
                 children: [
                   _RouteTab(destination: trip.destination, tripId: tripId),
                   _ChecklistTab(tripId: tripId),
-                  _ExpensesTab(tripId: tripId),
+                  _ExpensesTab(tripId: tripId, trip: trip),
                   _DocumentsTab(tripId: tripId),
                   _GalleryTab(tripId: tripId),
                 ],
@@ -115,14 +119,23 @@ class _RouteTab extends ConsumerStatefulWidget {
   ConsumerState<_RouteTab> createState() => _RouteTabState();
 }
 
-class _RouteTabState extends ConsumerState<_RouteTab>
-    with AutomaticKeepAliveClientMixin {
+class _RouteTabState extends ConsumerState<_RouteTab> {
   LatLng? _location;
   bool _loading = true;
   final MapController _mapController = MapController();
+  String? _errorMessage;
 
   @override
-  bool get wantKeepAlive => true;
+  void initState() {
+    super.initState();
+    _getCoordinates();
+  }
+
+  @override
+  void dispose() {
+    // Liberar recursos si fuera necesario
+    super.dispose();
+  }
 
   Future<List<LatLng>> _safeGeocode(String address) async {
     try {
@@ -144,14 +157,6 @@ class _RouteTabState extends ConsumerState<_RouteTab>
     return [];
   }
 
-  String? _errorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    _getCoordinates();
-  }
-
   Future<void> _getCoordinates() async {
     try {
       if (mounted) setState(() => _loading = true);
@@ -167,7 +172,8 @@ class _RouteTabState extends ConsumerState<_RouteTab>
       } else {
         if (mounted) {
           setState(() {
-            _errorMessage = "No se pudieron obtener las coordenadas para: ${widget.destination}. Verifica tu API Key de Google.";
+            _errorMessage =
+                "No se pudieron obtener las coordenadas para: ${widget.destination}.";
             _loading = false;
           });
         }
@@ -184,7 +190,6 @@ class _RouteTabState extends ConsumerState<_RouteTab>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     if (_loading) return const Center(child: CircularProgressIndicator());
 
     if (_errorMessage != null) {
@@ -243,27 +248,25 @@ class _RouteTabState extends ConsumerState<_RouteTab>
 
         return Stack(
           children: [
-            RepaintBoundary(
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: _location!,
-                  initialZoom: 15,
-                  onLongPress: (tapPosition, point) =>
-                      _showQuickAddDialog(context, point),
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.fravilarc.travel_planner',
-                  ),
-                  CurrentLocationLayer(
-                    alignPositionOnUpdate: AlignOnUpdate.never,
-                    alignDirectionOnUpdate: AlignOnUpdate.never,
-                  ),
-                  MarkerLayer(markers: markers),
-                ],
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _location!,
+                initialZoom: 15,
+                onLongPress: (tapPosition, point) =>
+                    _showQuickAddDialog(context, point),
               ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.fravilarc.travel_planner',
+                ),
+                CurrentLocationLayer(
+                  alignPositionOnUpdate: AlignOnUpdate.never,
+                  alignDirectionOnUpdate: AlignOnUpdate.never,
+                ),
+                MarkerLayer(markers: markers),
+              ],
             ),
             // BOTÓN MI UBICACIÓN
             Positioned(
@@ -358,7 +361,7 @@ class _RouteTabState extends ConsumerState<_RouteTab>
                 final lng = point['longitude'];
                 final url = Uri.parse(
                     'google.navigation:q=$lat,$lng&mode=w'); // w = walking
-                
+
                 // Fallback para iOS/Web
                 final fallbackUrl = Uri.parse(
                     'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=walking');
@@ -613,9 +616,10 @@ class _ChecklistTabState extends ConsumerState<_ChecklistTab> {
                       icon: const Icon(Icons.add, color: Colors.white),
                       onPressed: () {
                         if (_controller.text.isNotEmpty) {
-                          ref
-                              .read(tripsRepositoryProvider)
-                              .addChecklistItem(widget.tripId, _controller.text, _selectedCategory);
+                          ref.read(tripsRepositoryProvider).addChecklistItem(
+                              widget.tripId,
+                              _controller.text,
+                              _selectedCategory);
                           _controller.clear();
                           FocusScope.of(context).unfocus();
                         }
@@ -691,16 +695,28 @@ class _ChecklistTabState extends ConsumerState<_ChecklistTab> {
                       return Dismissible(
                         key: Key(item['id']),
                         direction: DismissDirection.endToStart,
-                        background: Container(color: Colors.red, alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 20), child: const Icon(Icons.delete, color: Colors.white)),
+                        background: Container(
+                            color: Colors.red,
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            child:
+                                const Icon(Icons.delete, color: Colors.white)),
                         onDismissed: (_) {
-                          ref.read(tripsRepositoryProvider).deleteChecklistItem(widget.tripId, item['id']);
+                          ref
+                              .read(tripsRepositoryProvider)
+                              .deleteChecklistItem(widget.tripId, item['id']);
                         },
                         child: CheckboxListTile(
-                          title: Text(item['title'], style: TextStyle(decoration: item['isChecked'] ? TextDecoration.lineThrough : null)),
+                          title: Text(item['title'],
+                              style: TextStyle(
+                                  decoration: item['isChecked']
+                                      ? TextDecoration.lineThrough
+                                      : null)),
                           value: item['isChecked'],
                           onChanged: (val) => ref
                               .read(tripsRepositoryProvider)
-                              .toggleChecklistItem(widget.tripId, item['id'], val!),
+                              .toggleChecklistItem(
+                                  widget.tripId, item['id'], val!),
                         ),
                       );
                     }).toList(),
@@ -727,7 +743,8 @@ class _ChecklistTabState extends ConsumerState<_ChecklistTab> {
 // --- PESTAÑA 3: CONTROL DE GASTOS ---
 class _ExpensesTab extends ConsumerStatefulWidget {
   final String tripId;
-  const _ExpensesTab({required this.tripId});
+  final Trip trip;
+  const _ExpensesTab({required this.tripId, required this.trip});
 
   @override
   ConsumerState<_ExpensesTab> createState() => _ExpensesTabState();
@@ -759,6 +776,47 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
       default:
         return Icons.category;
     }
+  }
+
+  void _showBudgetDialog(BuildContext context, WidgetRef ref, Trip trip) {
+    final budgetController = TextEditingController(
+      text: trip.budget != null ? trip.budget.toString() : '',
+    );
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Asignar Presupuesto'),
+          content: TextField(
+            controller: budgetController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Presupuesto (€)',
+              hintText: 'Ej. 500',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final budget =
+                    double.tryParse(budgetController.text.replaceAll(',', '.'));
+                if (budget != null) {
+                  ref
+                      .read(tripsRepositoryProvider)
+                      .updateTripBudget(trip.id!, budget);
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -795,16 +853,47 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text("Total Gastado:",
-                        style: TextStyle(color: Colors.white, fontSize: 18)),
-                    Text("${total.toStringAsFixed(2)} €",
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text("Total Gastado:",
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 18)),
+                        Text("${total.toStringAsFixed(2)} €",
+                            style: TextStyle(
+                                color: (widget.trip.budget != null &&
+                                        total > widget.trip.budget!)
+                                    ? Colors.redAccent
+                                    : Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          widget.trip.budget != null
+                              ? "Presupuesto: ${widget.trip.budget!.toStringAsFixed(2)} €"
+                              : "Sin límite",
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 14),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit,
+                              color: Colors.white70, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            _showBudgetDialog(context, ref, widget.trip);
+                          },
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -860,8 +949,7 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                   DropdownButton<String>(
                     value: _selectedCategory,
                     items: _categories
-                        .map((c) =>
-                            DropdownMenuItem(value: c, child: Text(c)))
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                         .toList(),
                     onChanged: (val) {
                       if (val != null) {
@@ -879,7 +967,9 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                     onPressed: () {
                       final amount = double.tryParse(
                           amountController.text.replaceAll(',', '.'));
-                      if (titleController.text.isNotEmpty && amount != null) {
+                      if (titleController.text.isNotEmpty &&
+                          amount != null &&
+                          amount > 0) {
                         ref.read(tripsRepositoryProvider).addExpense(
                             widget.tripId,
                             titleController.text,
@@ -888,6 +978,11 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                         titleController.clear();
                         amountController.clear();
                         FocusScope.of(context).unfocus();
+                      } else if (amount != null && amount <= 0) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('El gasto debe ser mayor que 0')),
+                        );
                       }
                     },
                   ),
@@ -1231,7 +1326,9 @@ class _DocumentsTab extends ConsumerWidget {
       body: docsAsync.when(
         data: (docs) {
           if (docs.isEmpty) {
-            return const Center(child: Text("No hay documentos subidos", style: TextStyle(color: Colors.grey, fontSize: 16)));
+            return const Center(
+                child: Text("No hay documentos subidos",
+                    style: TextStyle(color: Colors.grey, fontSize: 16)));
           }
           return ListView.builder(
             padding: const EdgeInsets.only(bottom: 80, top: 8),
@@ -1239,17 +1336,22 @@ class _DocumentsTab extends ConsumerWidget {
             itemBuilder: (context, index) {
               final doc = docs[index];
               final isPdf = doc['type'] == 'pdf';
-              
+
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 elevation: 2,
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: isPdf ? Colors.red.shade100 : Colors.blue.shade100,
-                    child: Icon(isPdf ? Icons.picture_as_pdf : Icons.image, color: isPdf ? Colors.red : Colors.blue),
+                    backgroundColor:
+                        isPdf ? Colors.red.shade100 : Colors.blue.shade100,
+                    child: Icon(isPdf ? Icons.picture_as_pdf : Icons.image,
+                        color: isPdf ? Colors.red : Colors.blue),
                   ),
-                  title: Text(doc['name'] ?? 'Documento sin nombre', overflow: TextOverflow.ellipsis),
-                  subtitle: Text("${(doc['size'] / 1024 / 1024).toStringAsFixed(2)} MB", style: const TextStyle(fontSize: 12)),
+                  title: Text(doc['name'] ?? 'Documento sin nombre',
+                      overflow: TextOverflow.ellipsis),
+                  subtitle: Text(
+                      "${(doc['size'] / 1024 / 1024).toStringAsFixed(2)} MB",
+                      style: const TextStyle(fontSize: 12)),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.grey),
                     onPressed: () {
@@ -1257,16 +1359,25 @@ class _DocumentsTab extends ConsumerWidget {
                         context: context,
                         builder: (ctx) => AlertDialog(
                           title: const Text('Eliminar documento'),
-                          content: const Text('¿Estás seguro de que quieres eliminarlo?'),
+                          content: const Text(
+                              '¿Estás seguro de que quieres eliminarlo?'),
                           actions: [
-                            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+                            TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Cancelar')),
                             TextButton(
                               onPressed: () {
                                 Navigator.pop(ctx);
-                                ref.read(tripsRepositoryProvider).deleteDocument(tripId, doc['id'], doc['storagePath']);
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Documento eliminado')));
+                                ref
+                                    .read(tripsRepositoryProvider)
+                                    .deleteDocument(
+                                        tripId, doc['id'], doc['storagePath']);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Documento eliminado')));
                               },
-                              child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+                              child: const Text('Eliminar',
+                                  style: TextStyle(color: Colors.red)),
                             ),
                           ],
                         ),
@@ -1276,13 +1387,20 @@ class _DocumentsTab extends ConsumerWidget {
                   onTap: () async {
                     final url = Uri.parse(doc['url']);
                     try {
-                      final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+                      final launched = await launchUrl(url,
+                          mode: LaunchMode.externalApplication);
                       if (!launched && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No hay app disponible para abrir esto')));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text(
+                                    'No hay app disponible para abrir esto')));
                       }
                     } catch (e) {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo procesar el enlace')));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text('No se pudo procesar el enlace')));
                       }
                     }
                   },
@@ -1315,24 +1433,31 @@ class _DocumentsTab extends ConsumerWidget {
             final file = File(result.files.single.path!);
             final extension = result.files.single.extension ?? 'unknown';
             final name = result.files.single.name;
-            
+
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Subiendo documento...')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Subiendo documento...')));
             }
             try {
-              await ref.read(tripsRepositoryProvider).uploadDocument(tripId, file, extension, name);
+              await ref
+                  .read(tripsRepositoryProvider)
+                  .uploadDocument(tripId, file, extension, name);
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Documento subido con éxito')));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Documento subido con éxito')));
               }
             } catch (e) {
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString().replaceAll("Exception: ", "")}')));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(
+                        'Error: ${e.toString().replaceAll("Exception: ", "")}')));
               }
             }
           }
         },
         icon: const Icon(Icons.upload_file),
-        label: const Text('Subir Archivo', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: const Text('Subir Archivo',
+            style: TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }

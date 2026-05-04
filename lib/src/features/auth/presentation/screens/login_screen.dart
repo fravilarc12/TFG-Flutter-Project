@@ -39,23 +39,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.listen(authControllerProvider, (previous, next) {
       if (next is AsyncError) {
         final errorString = next.error.toString().toLowerCase();
-        String translatedMessage = 'Error de autenticación. Inténtalo de nuevo.';
-        
-        if (errorString.contains('invalid-credential') || errorString.contains('user-not-found') || errorString.contains('wrong-password')) {
+        String translatedMessage =
+            'Error de autenticación. Inténtalo de nuevo.';
+
+        if (errorString.contains('invalid-credential') ||
+            errorString.contains('user-not-found') ||
+            errorString.contains('wrong-password')) {
           translatedMessage = 'El correo o la contraseña son incorrectos.';
         } else if (errorString.contains('invalid-email')) {
           translatedMessage = 'El formato del correo no es válido.';
         } else if (errorString.contains('too-many-requests')) {
-          translatedMessage = 'Demasiados intentos fallidos. Inténtalo más tarde.';
-        } else if (errorString.contains('network-request-failed') || errorString.contains('network_error')) {
+          translatedMessage =
+              'Demasiados intentos fallidos. Inténtalo más tarde.';
+        } else if (errorString.contains('network-request-failed') ||
+            errorString.contains('network_error')) {
           translatedMessage = 'Error de conexión. Comprueba tu internet.';
-        } else if (errorString.contains('sign_in_failed') || errorString.contains('sign_in_canceled')) {
-          translatedMessage = 'Error con Google: configura el SHA-1 en Firebase Console.';
+        } else if (errorString.contains('sign_in_failed') ||
+            errorString.contains('sign_in_canceled')) {
+          translatedMessage =
+              'Error con Google: configura el SHA-1 en Firebase Console.';
         } else if (errorString.contains('cancelado')) {
           translatedMessage = 'Inicio de sesión con Google cancelado.';
         } else if (errorString.contains('google')) {
           // Muestra el error real de Google para facilitar el diagnóstico
-          translatedMessage = 'Error con Google: ${next.error.toString().replaceAll('Exception:', '').trim()}';
+          translatedMessage =
+              'Error con Google: ${next.error.toString().replaceAll('Exception:', '').trim()}';
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -121,11 +129,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 decoration: InputDecoration(
                   labelText: 'Correo Electrónico',
                   labelStyle: const TextStyle(color: Color(0xFF707881)),
-                  prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF707881)),
+                  prefixIcon: const Icon(Icons.email_outlined,
+                      color: Color(0xFF707881)),
                   filled: true,
                   fillColor: const Color(0xFFE7E8E9),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0x33005D90), width: 2)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide:
+                          const BorderSide(color: Color(0x33005D90), width: 2)),
                 ),
                 enabled: !isLoading,
               ),
@@ -139,10 +153,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 decoration: InputDecoration(
                   labelText: 'Contraseña',
                   labelStyle: const TextStyle(color: Color(0xFF707881)),
-                  prefixIcon: const Icon(Icons.lock_outlined, color: Color(0xFF707881)),
+                  prefixIcon:
+                      const Icon(Icons.lock_outlined, color: Color(0xFF707881)),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       color: const Color(0xFF707881),
                     ),
                     onPressed: () {
@@ -153,8 +170,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   filled: true,
                   fillColor: const Color(0xFFE7E8E9),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0x33005D90), width: 2)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide:
+                          const BorderSide(color: Color(0x33005D90), width: 2)),
                 ),
                 enabled: !isLoading,
               ),
@@ -176,12 +198,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             );
                             return;
                           }
-                          
+
                           try {
                             await ref
                                 .read(authControllerProvider.notifier)
                                 .recoverPassword(email);
-                            
+
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -229,7 +251,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24)),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: isLoading
@@ -255,7 +278,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       : const Text(
                           'Iniciar Sesión',
                           style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
                         ),
                 ),
               ),
@@ -286,7 +311,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
                         'o continúa con',
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                        style: TextStyle(
+                            color: Colors.grey.shade500, fontSize: 13),
                       ),
                     ),
                     Expanded(child: Divider(color: Colors.grey.shade300)),
@@ -317,8 +343,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
                   height: 22,
                   width: 22,
-                  errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.g_mobiledata, size: 22, color: Color(0xFF4285F4)),
+                  errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata,
+                      size: 22, color: Color(0xFF4285F4)),
                 ),
                 label: const Text(
                   'Continuar con Google',

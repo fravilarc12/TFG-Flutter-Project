@@ -41,13 +41,14 @@ class HomeScreen extends ConsumerWidget {
             );
           }
 
-          return ListView.builder(
-            itemCount: trips.length,
-            padding: const EdgeInsets.only(top: 10),
-            itemBuilder: (context, index) {
-              final trip = trips[index];
+          return RepaintBoundary(
+            child: ListView.builder(
+              itemCount: trips.length,
+              padding: const EdgeInsets.only(top: 10),
+              itemBuilder: (context, index) {
+                final trip = trips[index];
 
-              return Dismissible(
+                return Dismissible(
                 // 1. La clave es vital para que Flutter sepa qué elemento borra
                 key: Key(trip.id ?? index.toString()),
 
@@ -61,6 +62,29 @@ class HomeScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(right: 20),
                   child: const Icon(Icons.delete, color: Colors.white),
                 ),
+
+                // Confirmación antes de borrar
+                confirmDismiss: (direction) async {
+                  return await showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text('Confirmar eliminación'),
+                        content: Text('¿Estás seguro de que quieres eliminar el viaje a ${trip.destination}?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text('Cancelar'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
 
                 // 4. Acción al terminar de deslizar
                 onDismissed: (direction) {
@@ -152,11 +176,11 @@ class HomeScreen extends ConsumerWidget {
                             bottomRight: Radius.circular(24),
                           ),
                           child: CachedNetworkImage(
-                            imageUrl: "https://maps.googleapis.com/maps/api/staticmap?center=${Uri.encodeComponent(trip.destination)}&zoom=6&size=800x400&maptype=terrain&style=feature:all|element:labels|visibility:off&key=AIzaSyBMTvXaq-cb3w4qLCRe_BkmVwA5B4ah4Qc",
+                            imageUrl: "https://maps.googleapis.com/maps/api/staticmap?center=${Uri.encodeComponent(trip.destination)}&zoom=11&size=450x225&maptype=terrain&key=AIzaSyBMTvXaq-cb3w4qLCRe_BkmVwA5B4ah4Qc",
                             height: 160,
                             fit: BoxFit.cover,
-                            memCacheWidth: 600, // Limitamos el tamaño en memoria
-                            memCacheHeight: 300,
+                            memCacheWidth: 450,
+                            memCacheHeight: 225,
                             placeholder: (context, url) => Container(
                               height: 160,
                               color: Colors.grey.shade100,
@@ -178,6 +202,7 @@ class HomeScreen extends ConsumerWidget {
                 ),
               );
             },
+            ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),

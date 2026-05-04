@@ -6,6 +6,7 @@ class Trip {
   final String destination;
   final DateTime startDate;
   final DateTime endDate;
+  final double? budget;
 
   Trip({
     this.id,
@@ -13,6 +14,7 @@ class Trip {
     required this.destination,
     required this.startDate,
     required this.endDate,
+    this.budget,
   });
 
   Map<String, dynamic> toFirestore() {
@@ -21,6 +23,7 @@ class Trip {
       'destination': destination,
       'startDate': Timestamp.fromDate(startDate),
       'endDate': Timestamp.fromDate(endDate),
+      if (budget != null) 'budget': budget,
     };
   }
 
@@ -46,6 +49,7 @@ class Trip {
       destination: data['destination'] ?? '',
       startDate: parseDate(startDateValue),
       endDate: parseDate(endDateValue),
+      budget: data['budget'] != null ? (data['budget'] as num).toDouble() : null,
     );
   }
 }

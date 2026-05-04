@@ -39,6 +39,10 @@ class TripsRepository {
     await _userTrips.doc(tripId).delete();
   }
 
+  Future<void> updateTripBudget(String tripId, double budget) async {
+    await _userTrips.doc(tripId).update({'budget': budget});
+  }
+
   // --- GESTIÓN DE EQUIPAJE (CHECKLIST) ---
   Stream<List<Map<String, dynamic>>> watchChecklist(String tripId) {
     try {
