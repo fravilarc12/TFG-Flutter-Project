@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../controllers/auth_controller.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -94,7 +95,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: AppColors.darkSlate,
                 ),
               ),
               const SizedBox(height: 8),
@@ -238,14 +239,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   height: 22,
                   width: 22,
                   errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.g_mobiledata, size: 22, color: Color(0xFF4285F4)),
+                      const Icon(Icons.g_mobiledata, size: 22, color: AppColors.googleBlue),
                 ),
                 label: const Text(
                   'Continuar con Google',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E293B),
+                    color: AppColors.darkSlate,
                   ),
                 ),
               ),

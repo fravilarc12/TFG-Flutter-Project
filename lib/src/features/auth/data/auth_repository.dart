@@ -27,24 +27,19 @@ class AuthRepository {
   /// Inicia sesión con Google. Funciona tanto para login como para registro:
   /// Firebase crea la cuenta automáticamente si no existe.
   Future<void> signInWithGoogle() async {
-    // Abre el selector de cuentas de Google
     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
     if (googleUser == null) {
-      // El usuario canceló el flujo
       throw Exception('Inicio de sesión con Google cancelado.');
     }
 
-    // Obtiene los tokens de autenticación
     final GoogleSignInAuthentication googleAuth =
         await googleUser.authentication;
 
-    // Crea las credenciales de Firebase
     final credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
 
-    // Inicia sesión en Firebase
     await _auth.signInWithCredential(credential);
   }
 
@@ -55,7 +50,6 @@ class AuthRepository {
   }
 }
 
-// ESTA PARTE ES CRÍTICA: Asegúrate de que @riverpod esté aquí
 @riverpod
 AuthRepository authRepository(AuthRepositoryRef ref) {
   return AuthRepository(FirebaseAuth.instance);

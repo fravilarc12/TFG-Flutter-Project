@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../controllers/auth_controller.dart';
+import '../../../../core/constants/app_colors.dart';
 
 // 1. Cambiamos a ConsumerStatefulWidget para tener "memoria"
 class LoginScreen extends ConsumerStatefulWidget {
@@ -108,7 +109,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF005D90),
+                      color: AppColors.primary,
                     ),
               ),
               const SizedBox(height: 8),
@@ -125,14 +126,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               TextField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(color: Color(0xFF191C1D)),
+                style: const TextStyle(color: AppColors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Correo Electrónico',
-                  labelStyle: const TextStyle(color: Color(0xFF707881)),
+                  labelStyle: const TextStyle(color: AppColors.textSecondary),
                   prefixIcon: const Icon(Icons.email_outlined,
-                      color: Color(0xFF707881)),
+                      color: AppColors.textSecondary),
                   filled: true,
-                  fillColor: const Color(0xFFE7E8E9),
+                  fillColor: AppColors.inputFill,
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none),
@@ -149,18 +150,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               TextField(
                 controller: passwordController,
                 obscureText: _obscurePassword,
-                style: const TextStyle(color: Color(0xFF191C1D)),
+                style: const TextStyle(color: AppColors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Contraseña',
-                  labelStyle: const TextStyle(color: Color(0xFF707881)),
+                  labelStyle: const TextStyle(color: AppColors.textSecondary),
                   prefixIcon:
-                      const Icon(Icons.lock_outlined, color: Color(0xFF707881)),
+                      const Icon(Icons.lock_outlined, color: AppColors.textSecondary),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
-                      color: const Color(0xFF707881),
+                      color: AppColors.textSecondary,
                     ),
                     onPressed: () {
                       setState(() {
@@ -169,7 +170,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     },
                   ),
                   filled: true,
-                  fillColor: const Color(0xFFE7E8E9),
+                  fillColor: AppColors.inputFill,
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none),
@@ -234,7 +235,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Container(
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF005D90), Color(0xFF0077B6)],
+                    colors: [AppColors.primary, AppColors.primaryContainer],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -344,14 +345,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   height: 22,
                   width: 22,
                   errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata,
-                      size: 22, color: Color(0xFF4285F4)),
+                      size: 22, color: AppColors.googleBlue),
                 ),
                 label: const Text(
                   'Continuar con Google',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E293B),
+                    color: AppColors.darkSlate,
                   ),
                 ),
               ),

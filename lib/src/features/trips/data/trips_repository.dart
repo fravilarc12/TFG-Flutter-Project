@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/trip.dart';
@@ -16,18 +17,17 @@ class TripsRepository {
   CollectionReference<Map<String, dynamic>> get _userTrips {
     final userId = _auth.currentUser?.uid;
     if (userId == null) throw Exception('Usuario no autenticado');
-    // Así es como Firebase aísla la data de un usuario:
     return _firestore.collection('users').doc(userId).collection('trips');
   }
 
-  // --- GESTIÓN DE VIAJES ---
   Stream<List<Trip>> watchTrips() {
     try {
       return _userTrips.snapshots().map((snapshot) {
         return snapshot.docs.map((doc) => Trip.fromFirestore(doc)).toList();
       });
     } catch (e) {
-      return const Stream.empty();
+      debugPrint('Error en watchTrips: $e');
+      return Stream.error(e);
     }
   }
 
@@ -43,7 +43,6 @@ class TripsRepository {
     await _userTrips.doc(tripId).update({'budget': budget});
   }
 
-  // --- GESTIÓN DE EQUIPAJE (CHECKLIST) ---
   Stream<List<Map<String, dynamic>>> watchChecklist(String tripId) {
     try {
       return _userTrips.doc(tripId).collection('checklist').snapshots().map(
@@ -51,7 +50,8 @@ class TripsRepository {
               .map((doc) => {'id': doc.id, ...doc.data()})
               .toList());
     } catch (e) {
-      return const Stream.empty();
+      debugPrint('Error en watchChecklist: $e');
+      return Stream.error(e);
     }
   }
 
@@ -75,7 +75,6 @@ class TripsRepository {
     });
   }
 
-  // --- GESTIÓN DE GASTOS ---
   Stream<List<Map<String, dynamic>>> watchExpenses(String tripId) {
     try {
       return _userTrips
@@ -87,7 +86,8 @@ class TripsRepository {
               .map((doc) => {'id': doc.id, ...doc.data()})
               .toList());
     } catch (e) {
-      return const Stream.empty();
+      debugPrint('Error en watchExpenses: $e');
+      return Stream.error(e);
     }
   }
 
@@ -105,31 +105,28 @@ class TripsRepository {
     await _userTrips.doc(tripId).collection('expenses').doc(expenseId).delete();
   }
 
-  // --- GESTIÓN DE ITINERARIOS ---
   Stream<List<Map<String, dynamic>>> watchItinerary(String tripId) {
     try {
       return _userTrips
           .doc(tripId)
           .collection('itinerary')
-          // 🛑 Evitar bloqueo de UI por caché local y Firebase FieldValue.serverTimestamp()
           .snapshots()
           .map((snapshot) {
         final list =
             snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
-        // Agrupación y ordenación manual
         list.sort((a, b) {
           final ta = a['timestamp'] as Timestamp?;
           final tb = b['timestamp'] as Timestamp?;
           if (ta == null && tb == null) return 0;
-          if (ta == null)
-            return 1; // El más reciente al final mientras Firebase responde
+          if (ta == null) return 1;
           if (tb == null) return -1;
           return ta.toDate().compareTo(tb.toDate());
         });
         return list;
       });
     } catch (e) {
-      return const Stream.empty();
+      debugPrint('Error en watchItinerary: $e');
+      return Stream.error(e);
     }
   }
 
@@ -147,7 +144,6 @@ class TripsRepository {
     await _userTrips.doc(tripId).collection('itinerary').doc(pointId).delete();
   }
 
-  // --- GESTIÓN DE GALERÍA DE FOTOS ---
   Stream<List<Map<String, dynamic>>> watchGallery(String tripId) {
     try {
       return _userTrips
@@ -159,12 +155,12 @@ class TripsRepository {
               .map((doc) => {'id': doc.id, ...doc.data()})
               .toList());
     } catch (e) {
-      return const Stream.empty();
+      debugPrint('Error en watchGallery: $e');
+      return Stream.error(e);
     }
   }
 
   Future<void> uploadPhoto(String tripId, File file) async {
-    // CRQ-0004 limit 5MB
     final int sizeInBytes = await file.length();
     if (sizeInBytes > 5 * 1024 * 1024) {
       throw Exception('La imagen supera el límite de 5 MB.');
@@ -195,7 +191,6 @@ class TripsRepository {
     await _userTrips.doc(tripId).collection('gallery').doc(photoId).delete();
   }
 
-  // --- GESTIÓN DE DOCUMENTOS ---
   Stream<List<Map<String, dynamic>>> watchDocuments(String tripId) {
     try {
       return _userTrips
@@ -207,7 +202,8 @@ class TripsRepository {
               .map((doc) => {'id': doc.id, ...doc.data()})
               .toList());
     } catch (e) {
-      return const Stream.empty();
+      debugPrint('Error en watchDocuments: $e');
+      return Stream.error(e);
     }
   }
 
@@ -246,8 +242,6 @@ class TripsRepository {
     await _userTrips.doc(tripId).collection('documents').doc(docId).delete();
   }
 }
-
-// --- PROVIDERS (LOS "CABLES" QUE CONECTAN TODO) ---
 
 @riverpod
 TripsRepository tripsRepository(Ref ref) {
