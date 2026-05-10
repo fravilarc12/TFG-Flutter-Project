@@ -1,4 +1,4 @@
-package com.fravilarc.travel_planner 
+package com.TravelHub.miapp 
 
 import io.flutter.embedding.android.FlutterActivity
 
