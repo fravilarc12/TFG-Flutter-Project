@@ -359,10 +359,30 @@ class RouteTabState extends ConsumerState<RouteTab> {
     );
   }
 
+  Future<List<String>> _getPlacePredictions(String query) async {
+    if (query.trim().isEmpty) return [];
+    try {
+      final url = Uri.parse(
+          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(query)}&key=AIzaSyBMTvXaq-cb3w4qLCRe_BkmVwA5B4ah4Qc');
+      final request = await HttpClient().getUrl(url);
+      final response = await request.close();
+      final body = await response.transform(utf8.decoder).join();
+      final data = json.decode(body);
+      if (data['status'] == 'OK' && data['predictions'] != null) {
+        return (data['predictions'] as List)
+            .map((p) => p['description'] as String)
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
   void _showSearchAddressDialog(BuildContext context) {
     final titleController = TextEditingController();
     final addressController = TextEditingController();
     bool isSearching = false;
+    bool isSearchingLocations = false;
+    List<String> _predictions = [];
 
     showDialog(
       context: context,
@@ -371,28 +391,79 @@ class RouteTabState extends ConsumerState<RouteTab> {
           builder: (context, setStateDialog) {
             return AlertDialog(
               title: const Text("Buscar Dirección"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleController,
-                    decoration: const InputDecoration(
-                        hintText: "Ej. Mi Hotel",
-                        labelText: "Nombre del Lugar"),
-                    autofocus: true,
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: addressController,
-                    decoration: const InputDecoration(
-                        hintText: "Ej. Times Square, NY",
-                        labelText: "Dirección real a buscar"),
-                  ),
-                  if (isSearching) ...[
-                    const SizedBox(height: 16),
-                    const Center(child: CircularProgressIndicator()),
-                  ]
-                ],
+              content: SizedBox(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: titleController,
+                        decoration: const InputDecoration(
+                            hintText: "Ej. Mi Hotel",
+                            labelText: "Nombre del Lugar (Opcional)"),
+                        autofocus: true,
+                      ),
+                      const SizedBox(height: 10),
+                    TextField(
+                      controller: addressController,
+                      decoration: const InputDecoration(
+                          hintText: "Ej. Times Square, NY",
+                          labelText: "Dirección real a buscar"),
+                      onChanged: (val) async {
+                        if (val.trim().length > 2) {
+                          setStateDialog(() => isSearchingLocations = true);
+                          final predictions = await _getPlacePredictions(val);
+                          setStateDialog(() {
+                            _predictions = predictions;
+                            isSearchingLocations = false;
+                          });
+                        } else {
+                          setStateDialog(() {
+                            _predictions = [];
+                            isSearchingLocations = false;
+                          });
+                        }
+                      },
+                    ),
+                    if (isSearchingLocations) ...[
+                      const SizedBox(height: 10),
+                      const LinearProgressIndicator(),
+                    ],
+                    if (_predictions.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 200),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: _predictions.length,
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              leading: const Icon(Icons.location_on_outlined, color: Colors.grey),
+                              title: Text(_predictions[index], style: const TextStyle(fontSize: 14)),
+                              onTap: () {
+                                addressController.text = _predictions[index];
+                                if (titleController.text.isEmpty) {
+                                  titleController.text = _predictions[index].split(',').first;
+                                }
+                                setStateDialog(() {
+                                  _predictions = [];
+                                });
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                    if (isSearching) ...[
+                      const SizedBox(height: 16),
+                      const Center(child: CircularProgressIndicator()),
+                    ]
+                  ],
+                ),
+               ),
               ),
               actions: [
                 TextButton(
@@ -407,8 +478,12 @@ class RouteTabState extends ConsumerState<RouteTab> {
                   onPressed: isSearching
                       ? null
                       : () async {
+                          if (titleController.text.trim().isEmpty && addressController.text.trim().isNotEmpty) {
+                            titleController.text = addressController.text.trim().split(',').first;
+                          }
                           if (titleController.text.trim().isEmpty ||
                               addressController.text.trim().isEmpty) return;
+                          
                           setStateDialog(() => isSearching = true);
                           try {
                             final locations = await _safeGeocode(
