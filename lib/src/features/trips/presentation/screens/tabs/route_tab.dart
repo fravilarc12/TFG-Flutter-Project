@@ -4,17 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../../../core/constants/app_colors.dart';
 import '../../../data/trips_repository.dart';
-import '../../../domain/trip.dart';
 
 // --- PESTAÑA 1: RUTA CON FLUTTER MAP (OPENSTREETMAP) ---
 class RouteTab extends ConsumerStatefulWidget {
@@ -47,7 +42,7 @@ class RouteTabState extends ConsumerState<RouteTab> {
   Future<List<LatLng>> _safeGeocode(String address) async {
     try {
       final url = Uri.parse(
-          'https://maps.googleapis.com/maps/api/geocode/json?address=${Uri.encodeComponent(address)}&key=AIzaSyBMTvXaq-cb3w4qLCRe_BkmVwA5B4ah4Qc');
+          'https://maps.googleapis.com/maps/api/geocode/json?address=${Uri.encodeComponent(address)}&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}');
       final request = await HttpClient().getUrl(url);
       final response = await request.close();
       final body = await response.transform(utf8.decoder).join();
@@ -363,7 +358,7 @@ class RouteTabState extends ConsumerState<RouteTab> {
     if (query.trim().isEmpty) return [];
     try {
       final url = Uri.parse(
-          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(query)}&key=AIzaSyBMTvXaq-cb3w4qLCRe_BkmVwA5B4ah4Qc');
+          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(query)}&key=${dotenv.env['GOOGLE_MAPS_API_KEY']}');
       final request = await HttpClient().getUrl(url);
       final response = await request.close();
       final body = await response.transform(utf8.decoder).join();
@@ -405,65 +400,68 @@ class RouteTabState extends ConsumerState<RouteTab> {
                         autofocus: true,
                       ),
                       const SizedBox(height: 10),
-                    TextField(
-                      controller: addressController,
-                      decoration: const InputDecoration(
-                          hintText: "Ej. Times Square, NY",
-                          labelText: "Dirección real a buscar"),
-                      onChanged: (val) async {
-                        if (val.trim().length > 2) {
-                          setStateDialog(() => isSearchingLocations = true);
-                          final predictions = await _getPlacePredictions(val);
-                          setStateDialog(() {
-                            _predictions = predictions;
-                            isSearchingLocations = false;
-                          });
-                        } else {
-                          setStateDialog(() {
-                            _predictions = [];
-                            isSearchingLocations = false;
-                          });
-                        }
-                      },
-                    ),
-                    if (isSearchingLocations) ...[
-                      const SizedBox(height: 10),
-                      const LinearProgressIndicator(),
-                    ],
-                    if (_predictions.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 200),
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: _predictions.length,
-                          itemBuilder: (context, index) {
-                            return ListTile(
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              leading: const Icon(Icons.location_on_outlined, color: Colors.grey),
-                              title: Text(_predictions[index], style: const TextStyle(fontSize: 14)),
-                              onTap: () {
-                                addressController.text = _predictions[index];
-                                if (titleController.text.isEmpty) {
-                                  titleController.text = _predictions[index].split(',').first;
-                                }
-                                setStateDialog(() {
-                                  _predictions = [];
-                                });
-                              },
-                            );
-                          },
-                        ),
+                      TextField(
+                        controller: addressController,
+                        decoration: const InputDecoration(
+                            hintText: "Ej. Times Square, NY",
+                            labelText: "Dirección real a buscar"),
+                        onChanged: (val) async {
+                          if (val.trim().length > 2) {
+                            setStateDialog(() => isSearchingLocations = true);
+                            final predictions = await _getPlacePredictions(val);
+                            setStateDialog(() {
+                              _predictions = predictions;
+                              isSearchingLocations = false;
+                            });
+                          } else {
+                            setStateDialog(() {
+                              _predictions = [];
+                              isSearchingLocations = false;
+                            });
+                          }
+                        },
                       ),
+                      if (isSearchingLocations) ...[
+                        const SizedBox(height: 10),
+                        const LinearProgressIndicator(),
+                      ],
+                      if (_predictions.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _predictions.length,
+                            itemBuilder: (context, index) {
+                              return ListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                leading: const Icon(Icons.location_on_outlined,
+                                    color: Colors.grey),
+                                title: Text(_predictions[index],
+                                    style: const TextStyle(fontSize: 14)),
+                                onTap: () {
+                                  addressController.text = _predictions[index];
+                                  if (titleController.text.isEmpty) {
+                                    titleController.text =
+                                        _predictions[index].split(',').first;
+                                  }
+                                  setStateDialog(() {
+                                    _predictions = [];
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                      if (isSearching) ...[
+                        const SizedBox(height: 16),
+                        const Center(child: CircularProgressIndicator()),
+                      ]
                     ],
-                    if (isSearching) ...[
-                      const SizedBox(height: 16),
-                      const Center(child: CircularProgressIndicator()),
-                    ]
-                  ],
+                  ),
                 ),
-               ),
               ),
               actions: [
                 TextButton(
@@ -478,12 +476,14 @@ class RouteTabState extends ConsumerState<RouteTab> {
                   onPressed: isSearching
                       ? null
                       : () async {
-                          if (titleController.text.trim().isEmpty && addressController.text.trim().isNotEmpty) {
-                            titleController.text = addressController.text.trim().split(',').first;
+                          if (titleController.text.trim().isEmpty &&
+                              addressController.text.trim().isNotEmpty) {
+                            titleController.text =
+                                addressController.text.trim().split(',').first;
                           }
                           if (titleController.text.trim().isEmpty ||
                               addressController.text.trim().isEmpty) return;
-                          
+
                           setStateDialog(() => isSearching = true);
                           try {
                             final locations = await _safeGeocode(
@@ -528,4 +528,3 @@ class RouteTabState extends ConsumerState<RouteTab> {
     );
   }
 }
-

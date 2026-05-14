@@ -8,7 +8,7 @@ void main() {
       // 1. Arrange: Preparamos los datos
       final fechaInicio = DateTime(2025, 5, 1);
       final fechaFin = DateTime(2025, 5, 15);
-      
+
       final trip = Trip(
         id: '12345',
         title: 'Viaje a Tokio',
@@ -25,11 +25,11 @@ void main() {
       expect(map['title'], 'Viaje a Tokio');
       expect(map['destination'], 'Japón');
       expect(map['budget'], 2000.0);
-      
+
       // Firestore guarda las fechas como Timestamp
       expect(map['startDate'], isA<Timestamp>());
       expect((map['startDate'] as Timestamp).toDate(), fechaInicio);
-      
+
       expect(map['endDate'], isA<Timestamp>());
       expect((map['endDate'] as Timestamp).toDate(), fechaFin);
     });

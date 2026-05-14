@@ -1,20 +1,7 @@
-import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import '../../../../../core/constants/app_colors.dart';
 import '../../../data/trips_repository.dart';
-import '../../../domain/trip.dart';
 
 // --- PESTAÑA 2: LISTA DE EQUIPAJE ---
 class ChecklistTab extends ConsumerStatefulWidget {
@@ -61,7 +48,8 @@ class ChecklistTabState extends ConsumerState<ChecklistTab> {
                       style: const TextStyle(color: AppColors.textPrimary),
                       decoration: InputDecoration(
                         hintText: "Ej: Pasaporte, Cargador...",
-                        hintStyle: const TextStyle(color: AppColors.textSecondary),
+                        hintStyle:
+                            const TextStyle(color: AppColors.textSecondary),
                         filled: true,
                         fillColor: AppColors.inputFill,
                         border: OutlineInputBorder(
@@ -77,8 +65,10 @@ class ChecklistTabState extends ConsumerState<ChecklistTab> {
                   const SizedBox(width: 8),
                   Container(
                     decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                          colors: [AppColors.primary, AppColors.primaryContainer]),
+                      gradient: LinearGradient(colors: [
+                        AppColors.primary,
+                        AppColors.primaryContainer
+                      ]),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
@@ -113,9 +103,8 @@ class ChecklistTabState extends ConsumerState<ChecklistTab> {
                         },
                         selectedColor: AppColors.primary.withOpacity(0.2),
                         labelStyle: TextStyle(
-                            color: isSelected
-                                ? AppColors.primary
-                                : Colors.grey),
+                            color:
+                                isSelected ? AppColors.primary : Colors.grey),
                       ),
                     );
                   }).toList(),
@@ -208,4 +197,3 @@ class ChecklistTabState extends ConsumerState<ChecklistTab> {
     );
   }
 }
-

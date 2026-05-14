@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>566178918427-fhap9tq8biqr3dut54u64apjdjih5ut1.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.566178918427-fhap9tq8biqr3dut54u64apjdjih5ut1</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>566178918427-mdcbd8qp264pcdicr2vca8ei324ulvh1.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDTMe-e1UmVW8maOU-JiW4fCGeNyusZ_Ok</string>
+	<key>GCM_SENDER_ID</key>
+	<string>566178918427</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.tunombre.travelPlannerApp</string>
+	<key>PROJECT_ID</key>
+	<string>travel-planner-tfg</string>
+	<key>STORAGE_BUCKET</key>
+	<string>travel-planner-tfg.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:566178918427:ios:4b4bb59636f3ee28d788be</string>
+</dict>
+</plist>

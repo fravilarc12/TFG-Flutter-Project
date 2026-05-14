@@ -30,7 +30,7 @@ class Trip {
   factory Trip.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
-    // Compatibilidad hacia atrás: Si no exis ten las nuevas variables, intenta usar 'date' antigua
+    // Compatibilidad hacia atrás: Si no existen las nuevas variables, intenta usar 'date' antigua
     final startDateValue = data['startDate'] ?? data['date'];
     final endDateValue = data['endDate'] ?? data['date'];
 
@@ -49,7 +49,8 @@ class Trip {
       destination: data['destination'] ?? '',
       startDate: parseDate(startDateValue),
       endDate: parseDate(endDateValue),
-      budget: data['budget'] != null ? (data['budget'] as num).toDouble() : null,
+      budget:
+          data['budget'] != null ? (data['budget'] as num).toDouble() : null,
     );
   }
 }
